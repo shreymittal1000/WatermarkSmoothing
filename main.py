@@ -1,6 +1,7 @@
 import os
+import torch
+import transformers
 from huggingface_hub import login
-from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # Define your Hugging Face API token
 api_token = "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"  # Replace this with your actual token
@@ -12,23 +13,20 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = api_token
 # This will log you in and create a token configuration on your machine
 login(api_token)
 
-model_name = "meta-llama/Meta-Llama-3.1-8B"
+# If model is not downloaded and cached, it will be downloaded
+model_id = "meta-llama/Meta-Llama-3.1-8B"
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# try:
+#     os.path.exists(model_id)
+#     local_dir = "./" + model_id
+#     pipeline = transformers.pipeline("text-generation", model=local_dir, tokenizer=local_dir, device_map="auto")
+# except:
+pipeline = transformers.pipeline(
+    "text-generation", model=model_id, model_kwargs={"torch_dtype": torch.bfloat16}, device_map="auto"
+)
+pipeline.save_pretrained(model_id)
 
 # Generate some text as a test
 input_text = "The future of AI is"
-inputs = tokenizer(input_text, return_tensors="pt")
-outputs = model.generate(inputs.input_ids, max_length=50)
-
-# Print generated text
-print(tokenizer.decode(outputs[0], skip_special_tokens=True))
-
-# Example input
-input_text = "Once upon a time"
-inputs = tokenizer(input_text, return_tensors="pt")
-
-# Generate text
-outputs = model.generate(inputs.input_ids, max_length=50)
-print(tokenizer.decode(outputs[0], skip_special_tokens=True))
+outputs = pipeline(input_text)
+print(outputs)

@@ -1,32 +1,15 @@
-import os
-import torch
-import transformers
-from huggingface_hub import login
+from model_loader import load_model
 
-# Define your Hugging Face API token
-api_token = "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"  # Replace this with your actual token
+# All the models we will be using
+model_small = "TinyLlama/TinyLlama_v1.1"
+model_big = "meta-llama/Llama-2-7b-hf"
+pipeline_small = load_model(model_small)
+pipeline_big = load_model(model_big)
 
-# Option 1: Set API token as an environment variable (recommended)
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = api_token
-
-# Option 2: Use Hugging Face's login functionality
-# This will log you in and create a token configuration on your machine
-login(api_token)
-
-# If model is not downloaded and cached, it will be downloaded
-model_id = "meta-llama/Meta-Llama-3.1-8B"
-
-# try:
-#     os.path.exists(model_id)
-#     local_dir = "./" + model_id
-#     pipeline = transformers.pipeline("text-generation", model=local_dir, tokenizer=local_dir, device_map="auto")
-# except:
-pipeline = transformers.pipeline(
-    "text-generation", model=model_id, model_kwargs={"torch_dtype": torch.bfloat16}, device_map="auto"
-)
-pipeline.save_pretrained(model_id)
-
-# Generate some text as a test
-input_text = "The future of AI is"
-outputs = pipeline(input_text)
-print(outputs)
+if __name__ == "__main__":
+    # Generate some text as a test
+    input_text = "The future of AI is"
+    output_1 = pipeline_small(input_text, max_length=250, truncation=True)[0]["generated_text"]
+    print(output_1)
+    output_2 = pipeline_big(input_text, max_length=250, truncation=True)[0]["generated_text"]
+    print(output_2)

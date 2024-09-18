@@ -4,7 +4,8 @@ This file contains useful functions where the watermark is context independent.
 import random
 import torch
 from torch import Tensor
-from tools import rank_difference, z_score
+from typing import List
+from src.tools import n_bigger, rank_difference, z_score
 
 
 def generate_soft_greenlist_watermark_context_independent(vocab_size: int, fraction: float, constant: float) -> Tensor:
@@ -45,32 +46,34 @@ def watermark_checker(watermark: Tensor, sequence: Tensor, threshold: float) -> 
     return z_score(n_green, len(sequence), (watermark/val).sum().item() / len(watermark)) >= threshold
 
 
-def predict_greenlist_absolute(ranks_big_model: list[Tensor], ranks_small_model: list[Tensor], threshold: int) -> list[bool]:
+def predict_greenlist_confidence(ranks_big_model: List[Tensor], ranks_small_model: List[Tensor]) -> Tensor:
     """
-    A function to predict if a token is greenlisted based on the rank difference between two models.
+    A function to predict the confidence scores of the greenlist prediction based on the rank difference between two models.
     :args ranks_big_model: A list of 1D tensors of ranks for the big model.
     :args ranks_small_model: A list of 1D tensors of ranks for the small model.
-    :args threshold: The threshold for the rank difference.
-    :return: A list of booleans indicating if the token is greenlisted.
-    """
-    assert(len(ranks_big_model) == len(ranks_small_model)) # The number of ranks must be the same for both models.
-    assert(threshold >= 0) # Threshold must be non-negative.
-    
-    mean_rank_difference = sum([rank_difference(ranks_big_model[i], ranks_small_model[i]) for i in range(len(ranks_big_model))]) / len(ranks_big_model)
-    return mean_rank_difference > threshold
-
-
-def predict_greenlist_confidence(ranks_big_model: list[Tensor], ranks_small_model: list[Tensor]) -> float:
-    """
-    A function to predict the confidence of the greenlist prediction based on the rank difference between two models.
-    :args ranks_big_model: A list of 1D tensors of ranks for the big model.
-    :args ranks_small_model: A list of 1D tensors of ranks for the small model.
-    :return: The confidence of the greenlist prediction.
+    :return: The confidence scores of the greenlist prediction.
     """
     assert(len(ranks_big_model) == len(ranks_small_model)) # The number of ranks must be the same for both models.
     
     confidence = Tensor.new_zeros(ranks_big_model[0].size())
     for rank_big, rank_small in zip(ranks_big_model, ranks_small_model):
-        confidence += (rank_difference(rank_big, rank_small) > 0).float().mean().item() / len(ranks_big_model)
+        confidence += n_bigger(rank_difference(rank_big, rank_small)) / len(ranks_big_model)
         
     return confidence
+
+
+def smoothed_logits(confidence: Tensor, logits_big: Tensor, logits_small: Tensor) -> Tensor:
+    """
+    A function to compute the smoothed logits.
+    :args confidence: A 1D tensor of greenlist confidence scores.
+    :args logits_big: A 2D tensor of logits for the big model.
+    :args logits_small: A 2D tensor of logits for the small model.
+    :return: A 2D tensor of smoothed logits.
+    """
+    assert(confidence.dim() == 1) # Confidence must be 1D.
+    assert(logits_big.dim() == 2) # Logits for big model must be 2D.
+    assert(logits_small.dim() == 2) # Logits for small model must be 2D.
+    assert(logits_big.size() == logits_small.size()) # Logits for big and small model must have the same shape.
+    assert(len(confidence) == logits_big.size(1)) # Confidence must have the same length as the number of tokens.
+    
+    return confidence * logits_small + (1 - confidence) * logits_big

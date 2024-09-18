@@ -32,6 +32,18 @@ def rank_difference(ranks_big_model: Tensor, ranks_small_model: Tensor) -> Tenso
     return ranks_big_model - ranks_small_model
 
 
+def n_bigger(ranks: Tensor) -> Tensor:
+    """
+    For each element in the input tensor, computes the number of elements that are bigger than it.
+    """
+    assert(ranks.dim() == 1) # Ranks must be 1D.
+    
+    n = torch.zeros_like(ranks)
+    for i in range(len(ranks)):
+        n[i] = (ranks >= ranks[i]).sum()
+    return n
+    
+
 def z_score(n_green: int, seq_length: int, fraction: float) -> float:
     """
     A function to compute the z-score of the number of greenlisted tokens in a sequence.

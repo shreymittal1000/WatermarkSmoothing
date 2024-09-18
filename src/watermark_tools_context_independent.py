@@ -5,7 +5,7 @@ import random
 import torch
 from torch import Tensor
 from typing import List
-from src.tools import n_bigger, rank_difference, z_score
+from tools import n_bigger, rank_difference, z_score
 
 
 def generate_soft_greenlist_watermark_context_independent(vocab_size: int, fraction: float, constant: float) -> Tensor:

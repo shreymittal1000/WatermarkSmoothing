@@ -2,3 +2,4 @@
 .env
 meta-llama
 TinyLlama
+src/__pycache__

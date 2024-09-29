@@ -12,7 +12,7 @@ def tensor_rank_positions(tensor: Tensor) -> Tensor:
     :args tensor: A 1D tensor.
     :return: A 1D tensor of ranks.
     """
-    assert(tensor.dim() == 1) # Tensor must be 1D.
+    assert(tensor.dim() <= 2) # Tensor must be 2D or less.
     
     sorted_indices = torch.argsort(tensor, descending=True)
     ranks = torch.empty_like(sorted_indices)
@@ -27,8 +27,8 @@ def rank_difference(ranks_big_model: Tensor, ranks_small_model: Tensor) -> Tenso
     :args ranks_small_model: A 1D tensor of ranks for the small model.
     :return: A 1D tensor of rank differences.
     """
-    assert(ranks_big_model.dim() == 1) # Ranks for big model must be 1D.
-    assert(ranks_small_model.dim() == 1) # Ranks for small model must be 1D.
+    assert(ranks_big_model.dim() <= 2) # Ranks for big model must be 2D or less.
+    assert(ranks_small_model.dim() <= 2) # Ranks for small model must be 2D or less.
     return ranks_big_model - ranks_small_model
 
 
@@ -36,11 +36,18 @@ def n_bigger(ranks: Tensor) -> Tensor:
     """
     For each element in the input tensor, computes the number of elements that are bigger than it.
     """
-    assert(ranks.dim() == 1) # Ranks must be 1D.
+    assert(ranks.dim() <=2) # Tensor must be 2D or less.
     
-    n = torch.zeros_like(ranks)
-    for i in range(len(ranks)):
-        n[i] = (ranks >= ranks[i]).sum()
+    n = torch.zeros_like(ranks)  # Tensor to store the result.
+    
+    if ranks.dim() == 1:  # Handle 1D case
+        for i in range(len(ranks)):
+            n[i] = (ranks >= ranks[i]).sum()
+    else:  # Handle 2D case
+        for i in range(ranks.size(0)):  # Loop over rows
+            for j in range(ranks.size(1)):  # Loop over elements in each row
+                n[i, j] = (ranks[i, :] >= ranks[i, j]).sum()
+    
     return n
     
 

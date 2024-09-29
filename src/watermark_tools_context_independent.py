@@ -55,7 +55,7 @@ def predict_greenlist_confidence(ranks_big_model: List[Tensor], ranks_small_mode
     """
     assert(len(ranks_big_model) == len(ranks_small_model)) # The number of ranks must be the same for both models.
     
-    confidence = Tensor.new_zeros(ranks_big_model[0].size())
+    confidence = Tensor.new_zeros(ranks_big_model[0])
     for rank_big, rank_small in zip(ranks_big_model, ranks_small_model):
         confidence += n_bigger(rank_difference(rank_big, rank_small)) / len(ranks_big_model)
         

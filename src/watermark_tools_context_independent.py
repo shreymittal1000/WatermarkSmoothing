@@ -5,7 +5,7 @@ import random
 import torch
 from torch import Tensor
 from typing import List
-from tools import n_bigger, rank_difference, z_score
+from tools import n_smaller, rank_difference, z_score
 
 
 def generate_soft_greenlist_watermark_context_independent(vocab_size: int, fraction: float, constant: float) -> Tensor:
@@ -55,9 +55,9 @@ def predict_greenlist_confidence(ranks_big_model: List[Tensor], ranks_small_mode
     """
     assert(len(ranks_big_model) == len(ranks_small_model)) # The number of ranks must be the same for both models.
     
-    confidence = Tensor.new_zeros(ranks_big_model[0])
+    confidence = torch.zeros(ranks_big_model.shape[1], dtype=torch.float16)
     for rank_big, rank_small in zip(ranks_big_model, ranks_small_model):
-        confidence += n_bigger(rank_difference(rank_big, rank_small)) / len(ranks_big_model)
+        confidence += n_smaller(rank_difference(rank_big, rank_small)) / (ranks_big_model.shape[0] * ranks_big_model.shape[1])
         
     return confidence
 

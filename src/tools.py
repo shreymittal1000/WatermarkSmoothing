@@ -32,7 +32,7 @@ def rank_difference(ranks_big_model: Tensor, ranks_small_model: Tensor) -> Tenso
     return ranks_big_model - ranks_small_model
 
 
-def n_bigger(ranks: Tensor) -> Tensor:
+def n_smaller(ranks: Tensor) -> Tensor:
     """
     For each element in the input tensor, computes the number of elements that are bigger than it.
     """
@@ -42,11 +42,11 @@ def n_bigger(ranks: Tensor) -> Tensor:
     
     if ranks.dim() == 1:  # Handle 1D case
         for i in range(len(ranks)):
-            n[i] = (ranks >= ranks[i]).sum()
+            n[i] = (ranks <= ranks[i]).sum()
     else:  # Handle 2D case
         for i in range(ranks.size(0)):  # Loop over rows
             for j in range(ranks.size(1)):  # Loop over elements in each row
-                n[i, j] = (ranks[i, :] >= ranks[i, j]).sum()
+                n[i, j] = (ranks[i, :] <= ranks[i, j]).sum()
     
     return n
     

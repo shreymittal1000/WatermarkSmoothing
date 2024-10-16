@@ -27,7 +27,7 @@ def generate_soft_greenlist_watermark_context_independent(vocab_size: int, fract
     return watermark
 
 
-def watermark_checker(watermark: Tensor, sequence: Tensor, threshold: float) -> bool:
+def watermark_checker(watermark: torch.Tensor, sequence: torch.Tensor, threshold: float) -> bool:
     """
     A function to check whether a given sequence is greenlisted based on a watermark and a threshold value.
     :args watermark: A 1D tensor of the watermark.
@@ -35,15 +35,21 @@ def watermark_checker(watermark: Tensor, sequence: Tensor, threshold: float) -> 
     :args threshold: The threshold value for the z-score.
     :return: A boolean indicating if the sequence is greenlisted.
     """
-    assert(watermark.dim() == 1) # Watermark must be a 1D tensor.
-    assert(sequence.dim() == 1) # Sequence must be a 1D tensor.
-    assert(len(watermark) == len(sequence)) # Watermark and sequence must have the same length.
+    assert(watermark.dim() == 1)  # Watermark must be a 1D tensor.
+    assert(sequence.dim() == 1)   # Sequence must be a 1D tensor.
+    # assert(len(watermark) == len(sequence))  # Watermark and sequence must have the same length.
     
-    # Get the first nonzero value of the watermark token
-    val = watermark[watermark.nonzero(as_tuple=True)[0]]
+    # Extract the corresponding non-zero values from the watermark
+    corresponding_watermark_values = watermark[sequence]
+
+    # Calculate n_green based on the watermark and sequence values
+    n_green = 0
+    for vals in corresponding_watermark_values:
+      if vals != 0:
+        n_green += 1
     
-    n_green = (watermark/val * sequence).sum().item()
-    return z_score(n_green, len(sequence), (watermark/val).sum().item() / len(watermark)) >= threshold
+    # Return whether the sequence is greenlisted based on the threshold
+    return n_green / sequence.shape[0]
 
 
 def predict_greenlist_confidence(ranks_big_model: List[Tensor], ranks_small_model: List[Tensor]) -> Tensor:
